@@ -226,7 +226,7 @@ public class Hashids {
   private String _encode(long... numbers) {
     long numberHashInt = 0;
     for (int i = 0; i < numbers.length; i++) {
-      numberHashInt += (numbers[i] % (i + 100));
+      numberHashInt += (numbers[i] % (i + 100)); // 100, 101, .... 100 + numbers.length
     }
     String alphabet = this.alphabet;
     final char ret = alphabet.charAt((int) (numberHashInt % alphabet.length()));
@@ -235,15 +235,15 @@ public class Hashids {
     long sepsIndex, guardIndex;
     String buffer;
     final StringBuilder ret_strB = new StringBuilder(this.minHashLength);
-    ret_strB.append(ret);
+    ret_strB.append(ret); // 首字母
     char guard;
 
     for (int i = 0; i < numbers.length; i++) {
       num = numbers[i];
-      buffer = ret + this.salt + alphabet;
+      buffer = ret + this.salt + alphabet; // 首字母 + 盐 + 字母表
 
       alphabet = Hashids.consistentShuffle(alphabet, buffer.substring(0, alphabet.length()));
-      final String last = Hashids.hash(num, alphabet);
+      final String last = Hashids.hash(num, alphabet); // 数字 到 字符串的映射
 
       ret_strB.append(last);
 
@@ -258,12 +258,13 @@ public class Hashids {
       }
     }
 
+    // 确保最小长度
     String ret_str = ret_strB.toString();
     if (ret_str.length() < this.minHashLength) {
       guardIndex = (numberHashInt + (ret_str.charAt(0))) % this.guards.length();
       guard = this.guards.charAt((int) guardIndex);
 
-      ret_str = guard + ret_str;
+      ret_str = guard + ret_str; // 前后各加一个字符用于标识
 
       if (ret_str.length() < this.minHashLength) {
         guardIndex = (numberHashInt + (ret_str.charAt(2))) % this.guards.length();
@@ -273,6 +274,7 @@ public class Hashids {
       }
     }
 
+    //
     final int halfLen = alphabet.length() / 2;
     while (ret_str.length() < this.minHashLength) {
       alphabet = Hashids.consistentShuffle(alphabet, alphabet);
@@ -324,6 +326,8 @@ public class Hashids {
       arr[k] = ret.get(k);
     }
 
+
+    // double check
     if (!this.encode(arr).equals(hash)) {
       arr = new long[0];
     }
@@ -339,10 +343,14 @@ public class Hashids {
     int asc_val, j;
     final char[] tmpArr = alphabet.toCharArray();
     for (int i = tmpArr.length - 1, v = 0, p = 0; i > 0; i--, v++) {
-      v %= salt.length();
-      asc_val = salt.charAt(v);
-      p += asc_val;
-      j = (asc_val + v + p) % i;
+      // 初始化 i为倒排序
+      v %= salt.length(); // v 0 ... alphabet.length % salt.length
+      asc_val = salt.charAt(v); // 取出对应的字符
+      p += asc_val; // p 自增 asc_val, p是一个持续自增的值
+      // 计算出需要交换的位置
+      j = (asc_val + v + p)
+              % i; // 确保 j 位于 i 之前
+      // 交换 j , i
       final char tmp = tmpArr[j];
       tmpArr[j] = tmpArr[i];
       tmpArr[i] = tmp;
@@ -356,22 +364,28 @@ public class Hashids {
     final int alphabetLen = alphabet.length();
 
     do {
-      final int index = (int) (input % alphabetLen);
+      final int index = (int) (input % alphabetLen); // 从字母表中取出一个字母的索引值
       if (index >= 0 && index < alphabet.length()) {
-        hash = alphabet.charAt(index) + hash;
+        hash = alphabet.charAt(index) + hash; // 添加到字符串的头部
       }
-      input /= alphabetLen;
+      input /= alphabetLen; //循环 1以 alphabetLen为底 input 的对数次
     } while (input > 0);
 
     return hash;
   }
 
+  /**
+   * 给定一个字符串映射到一个数字
+   * @param input  字符串
+   * @param alphabet 字母表
+   * @return
+   */
   private static Long unhash(String input, String alphabet) {
     long number = 0, pos;
 
     for (int i = 0; i < input.length(); i++) {
-      pos = alphabet.indexOf(input.charAt(i));
-      number = number * alphabet.length() + pos;
+      pos = alphabet.indexOf(input.charAt(i)); // 每一个输入字符在字母表中的索引
+      number = number * alphabet.length() + pos; // 当前的值 * 字母表长度 + 索引
     }
 
     return number;
